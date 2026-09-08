@@ -1,0 +1,4 @@
+*.o
+*.a
+test/test_vectors
+test/test_api

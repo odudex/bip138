@@ -17,7 +17,7 @@ OBJECTS = $(SOURCES:.c=.o)
 LIB = src/libbip138.a
 
 TEST_CRYPTO = test/test_crypto.o
-TESTS = test/test_vectors test/test_api
+TESTS = test/test_vectors test/test_api test/test_regressions
 TEST_LIBS = -lmbedcrypto
 
 all: $(LIB) $(TESTS)
@@ -37,14 +37,22 @@ test/test_vectors: test/test_vectors.c test/vectors.h $(TEST_CRYPTO) $(LIB)
 test/test_api: test/test_api.c test/vectors.h $(TEST_CRYPTO) $(LIB)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $< $(TEST_CRYPTO) $(LIB) $(LDFLAGS) $(TEST_LIBS)
 
+test/test_regressions: test/test_regressions.c $(TEST_CRYPTO) $(LIB)
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $< $(TEST_CRYPTO) $(LIB) $(LDFLAGS) $(TEST_LIBS)
+
 run: $(TESTS)
 	./test/test_vectors
 	./test/test_api
+	./test/test_regressions
 
 vectors:
 	python3 test/gen_vectors.py
 
+# Compile-only portability check; requires GCC's 32-bit development headers.
+check32:
+	$(CC) $(CFLAGS) $(INCLUDES) -m32 -Werror=type-limits -fsyntax-only $(SOURCES) test/test_regressions.c
+
 clean:
 	rm -f $(OBJECTS) $(LIB) $(TEST_CRYPTO) $(TESTS)
 
-.PHONY: all run vectors clean
+.PHONY: all run vectors check32 clean

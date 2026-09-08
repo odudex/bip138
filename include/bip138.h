@@ -183,6 +183,16 @@ int bip138_encrypt(const bip138_crypto *c, const uint8_t *keys, size_t n_keys,
                    const uint8_t *plaintext, size_t plaintext_len, uint8_t *out,
                    size_t out_cap, size_t *out_len);
 
+/* Keep common derivation paths in the container instead of dropping them.
+ * Costs a few bytes; lets a decoder that tries hints first open the backup
+ * without walking the common set. */
+#define BIP138_FLAG_KEEP_COMMON_PATHS 0x01
+int bip138_encrypt_flags(const bip138_crypto *c, const uint8_t *keys,
+                         size_t n_keys, const bip138_path *paths,
+                         size_t n_paths, uint32_t flags,
+                         const uint8_t *plaintext, size_t plaintext_len,
+                         uint8_t *out, size_t out_cap, size_t *out_len);
+
 int bip138_is_container(const uint8_t *buf, size_t len);
 /* Validates the framing; bytes after the payload are ignored. */
 int bip138_parse(const uint8_t *buf, size_t len, bip138_container *out);

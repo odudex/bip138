@@ -1,5 +1,7 @@
 # bip138
 
+[![CI](https://github.com/odudex/bip138/actions/workflows/ci.yml/badge.svg)](https://github.com/odudex/bip138/actions/workflows/ci.yml)
+
 A small C implementation of [BIP138](https://github.com/bitcoin/bips/pull/1951), the Compact Encryption Scheme for Non-seed Wallet Data. It encrypts wallet metadata such as output descriptors and wallet policies to the public keys already present in the descriptor, so any cosigner can open the backup with nothing but their xpub.
 
 The library implements version 1 of the format with ChaCha20-Poly1305. It is written in C99 for embedded targets: no allocation, no global state, and no dependencies.
@@ -61,6 +63,8 @@ make run                       # optimised build, all three suites
 make clean && make DEBUG=1 run # ASan + UBSan
 make check32                   # compile-only 32-bit check (GCC multilib headers)
 ```
+
+CI runs the three suites with GCC and Clang, optimised and under sanitizers, plus the 32-bit check, the CMake build, clang-format, and a check that `test/vectors.h` matches `test/vectors/*.json`.
 
 ## Test vectors
 

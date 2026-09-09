@@ -3,3 +3,4 @@
 test/test_vectors
 test/test_api
 test/test_regressions
+build/

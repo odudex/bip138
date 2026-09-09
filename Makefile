@@ -3,12 +3,16 @@ CFLAGS = -Wall -Wextra -Werror=unused-result -std=c99 -g
 LDFLAGS =
 INCLUDES = -Iinclude -Isrc
 
-# DEBUG=1 builds with ASan + UBSan; run `make clean` when toggling.
+# DEBUG=1 builds with ASan + UBSan; run `make clean` when toggling. WERROR=1
+# turns warnings into errors, as CI does.
 ifeq ($(DEBUG),1)
   CFLAGS += -O0 -fno-omit-frame-pointer -fsanitize=address,undefined
   LDFLAGS += -fsanitize=address,undefined
 else
   CFLAGS += -O2
+endif
+ifeq ($(WERROR),1)
+  CFLAGS += -Werror
 endif
 
 SOURCES = src/bip138_varint.c src/bip138_secret.c src/bip138_paths.c \

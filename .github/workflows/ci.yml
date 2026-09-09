@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  format:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y clang-format
+      - run: clang-format --dry-run -Werror src/*.c src/*.h include/*.h test/*.c test/*.h
+
+  test:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+        debug: [0, 1]
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y libmbedtls-dev
+      # ASan needs fewer address-randomisation bits than recent kernels default to.
+      - if: matrix.debug == 1
+        run: sudo sysctl -w vm.mmap_rnd_bits=28
+      - run: make CC=${{ matrix.cc }} DEBUG=${{ matrix.debug }} WERROR=1 run
+
+  check32:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y gcc-multilib
+      - run: make WERROR=1 check32
+
+  cmake:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: cmake -S . -B build -DCMAKE_C_FLAGS=-Werror
+      - run: cmake --build build
+
+  vectors:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y clang-format
+      - run: make vectors
+      - run: git diff --exit-code test/vectors.h

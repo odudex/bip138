@@ -295,8 +295,8 @@ int bip138_parse(const uint8_t *buf, size_t len, bip138_container *out) {
     return BIP138_ERR_FORMAT;
   pos += consumed;
   /* The ciphertext length is opaque framing: it only has to fit the remaining
-   * bytes. A ciphertext too short to hold the AEAD tag (or a plaintext beyond the
-   * cipher's limit) is rejected by the AEAD at decrypt, keeping the parser
+   * bytes. A ciphertext too short to hold the AEAD tag, or one beyond the
+   * cipher's plaintext limit, is reported by bip138_decrypt, keeping the parser
    * agnostic to the encryption algorithm. */
   if (ct_len > len - pos)
     return BIP138_ERR_FORMAT;
@@ -356,9 +356,11 @@ int bip138_decrypt(const bip138_crypto *c, const bip138_container *cont,
   if (!c || !c->sha256 || !c->aead_decrypt || !cont || !keys || n_keys == 0 ||
       !plaintext || !plaintext_len)
     return BIP138_ERR_ARG;
-  size_t pt_len = bip138_plaintext_max(cont);
-  if (pt_len == 0)
+  if (cont->ciphertext_len <= BIP138_TAG_LEN)
     return BIP138_ERR_FORMAT;
+  if (!bip138_plaintext_len_valid(cont->ciphertext_len - BIP138_TAG_LEN))
+    return BIP138_ERR_LIMIT;
+  size_t pt_len = cont->ciphertext_len - BIP138_TAG_LEN;
   if (plaintext_cap < pt_len)
     return BIP138_ERR_SIZE;
 

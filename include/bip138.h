@@ -194,16 +194,21 @@ int bip138_encrypt_flags(const bip138_crypto *c, const uint8_t *keys,
                          uint8_t *out, size_t out_cap, size_t *out_len);
 
 int bip138_is_container(const uint8_t *buf, size_t len);
-/* Validates the framing; bytes after the payload are ignored. */
+/* Validates the framing; bytes after the payload are ignored. The ciphertext
+ * length is checked only against the buffer: a ciphertext too short for the
+ * tag or beyond the AEAD limit parses and is reported by bip138_decrypt. */
 int bip138_parse(const uint8_t *buf, size_t len, bip138_container *out);
 /* Copies path index into child (child_cap entries) and sets *depth. */
 int bip138_path_at(const bip138_container *c, size_t index, uint32_t *child,
                    size_t child_cap, size_t *depth);
-/* Bytes needed for the decrypted plaintext. */
+/* Bytes needed for the decrypted plaintext; 0 when the ciphertext cannot hold
+ * the tag or exceeds the AEAD limit, in which case bip138_decrypt fails. */
 size_t bip138_plaintext_max(const bip138_container *c);
 /* Tries every key against every stored secret. On success the plaintext holds
  * at least one valid item (possibly an unknown type) and *key_index (optional)
- * names the key used. */
+ * names the key used. Returns BIP138_ERR_FORMAT when the ciphertext cannot
+ * hold the tag and BIP138_ERR_LIMIT when it exceeds the AEAD's plaintext
+ * limit. */
 int bip138_decrypt(const bip138_crypto *c, const bip138_container *cont,
                    const uint8_t *keys, size_t n_keys, uint8_t *plaintext,
                    size_t plaintext_cap, size_t *plaintext_len,

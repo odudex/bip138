@@ -35,10 +35,11 @@ bip138_encrypt(crypto, keys, 2, NULL, 0, pt, pt_len, blob, cap, &blob_len);
 /* Later, with one candidate key. */
 bip138_container cont;
 bip138_parse(blob, blob_len, &cont);
-uint8_t *out = malloc(bip138_plaintext_max(&cont));
+size_t out_cap = bip138_plaintext_max(&cont); /* 0: no room for the tag */
+uint8_t *out = malloc(out_cap);
 size_t out_len;
-if (bip138_decrypt(crypto, &cont, keys, 1, out, bip138_plaintext_max(&cont),
-                   &out_len, NULL) == BIP138_OK) {
+if (out_cap && bip138_decrypt(crypto, &cont, keys, 1, out, out_cap, &out_len,
+                              NULL) == BIP138_OK) {
   bip138_item_iter it;
   bip138_item_iter_init(&it, out, out_len);
   while (bip138_item_next(&it, &item) == 1) {

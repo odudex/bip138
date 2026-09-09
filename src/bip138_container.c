@@ -294,10 +294,12 @@ int bip138_parse(const uint8_t *buf, size_t len, bip138_container *out) {
   if (bip138_varint_read(buf + pos, len - pos, &ct_len, &consumed) != BIP138_OK)
     return BIP138_ERR_FORMAT;
   pos += consumed;
-  if (ct_len <= BIP138_TAG_LEN || ct_len > len - pos)
+  /* The ciphertext length is opaque framing: it only has to fit the remaining
+   * bytes. A ciphertext too short to hold the AEAD tag (or a plaintext beyond the
+   * cipher's limit) is rejected by the AEAD at decrypt, keeping the parser
+   * agnostic to the encryption algorithm. */
+  if (ct_len > len - pos)
     return BIP138_ERR_FORMAT;
-  if (!bip138_plaintext_len_valid(ct_len - BIP138_TAG_LEN))
-    return BIP138_ERR_LIMIT;
   out->ciphertext = buf + pos;
   out->ciphertext_len = (size_t)ct_len;
   return BIP138_OK;

@@ -295,12 +295,42 @@ static void test_duplicate_secrets(void) {
   CHECK(out_len == sizeof(note) && memcmp(out, note, out_len) == 0);
 }
 
+/* A zero-length (or otherwise sub-tag) ciphertext is well framed, so the parser
+ * accepts it; the AEAD rejects it at decrypt, keeping the parser agnostic to the
+ * encryption algorithm. */
+static void test_zero_length_ciphertext(void) {
+  uint8_t blob[64];
+  size_t n = 0;
+  memcpy(blob + n, BIP138_MAGIC, BIP138_MAGIC_LEN);
+  n += BIP138_MAGIC_LEN;
+  blob[n++] = BIP138_VERSION;                        /* version */
+  blob[n++] = 0x00;                                  /* 0 derivation paths */
+  blob[n++] = 0x01;                                  /* 1 individual secret */
+  memset(blob + n, 0xAB, BIP138_SECRET_LEN);
+  n += BIP138_SECRET_LEN;
+  blob[n++] = BIP138_ENCRYPTION_CHACHA20_POLY1305;   /* encryption */
+  memset(blob + n, 0x01, BIP138_NONCE_LEN);          /* non-zero nonce */
+  n += BIP138_NONCE_LEN;
+  blob[n++] = 0x00;                                  /* ciphertext length = 0 */
+
+  bip138_container cont;
+  CHECK(bip138_parse(blob, n, &cont) == BIP138_OK);
+  CHECK(cont.ciphertext_len == 0);
+
+  uint8_t out[64];
+  size_t out_len = 0;
+  /* Deferred: the empty ciphertext fails at decrypt, not at parse. */
+  CHECK(bip138_decrypt(test_crypto(), &cont, key, 1, out, sizeof(out), &out_len,
+                       NULL) != BIP138_OK);
+}
+
 int main(void) {
   test_short_paths();
   test_size_limits();
   test_unknown_content();
   test_utf8();
   test_duplicate_secrets();
+  test_zero_length_ciphertext();
   printf("bip138 regressions: %d checks, %d failed\n", checks, failures);
   return failures ? 1 : 0;
 }
